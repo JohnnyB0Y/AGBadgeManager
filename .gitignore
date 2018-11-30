@@ -5,7 +5,8 @@
 ## Build generated
 build/
 DerivedData/
-
+# OS X
+.DS_Store
 ## Various settings
 *.pbxuser
 !default.pbxuser
