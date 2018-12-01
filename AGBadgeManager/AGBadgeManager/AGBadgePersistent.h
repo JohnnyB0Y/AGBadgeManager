@@ -10,30 +10,47 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ 用户可以根据<AGBadgePersistentDelegate>协议，自定义存储方式。
+ 
+ 1，默认使用的存储方式是 NSUserDefaults。
+ 
+ 2，遵守<AGBadgePersistentDelegate>协议的对象就能注入到 AGBadgeManager 作为内部存储对象。
+ [AGBadgeManager ag_configurationPersistent:(id<AGBadgePersistentDelegate>)persistent];
+ 
+ */
+
 @protocol AGBadgePersistentDelegate <NSObject>
 
-/** 获取对应类型的标记数 */
-- (NSNumber *) ag_badgeForType:(NSString *)type;
+/** 获取对应类型标记数 */
+- (NSInteger) badgeForType:(NSString *)type;
 
-/** 对某类型标记存入字典 */
-- (NSNumber *) ag_setBadge:(NSNumber *)badge forType:(NSString *)type;
+/** 保存对应类型标记 */
+- (NSInteger) setBadge:(NSInteger)badge forType:(NSString *)type;
 
-/** 持久化标记数量 */
-- (void) ag_persistentAllBadge;
-
-@optional
-/** 区分用户标记数量的标识符 */
-- (NSString *) ag_persistentIdentifier;
-- (NSInteger) ag_badgeIntegerForType:(NSString *)type;
-- (NSInteger) ag_setBadgeInteger:(NSInteger)badge forType:(NSString *)type;
+/** 持久化 */
+- (void) persistentAll;
 
 @end
 
 
 @interface AGBadgePersistent : NSObject <AGBadgePersistentDelegate>
 
-+ (instancetype)newWithPersistentIdentifier:(NSString *)identifier;
-- (instancetype)initWithPersistentIdentifier:(NSString *)identifier;
+/**
+ 创建存储对象
+
+ @param identifier 区分多账号下用户的标识
+ @return 存储对象
+ */
++ (instancetype)newWithIdentifier:(NSString *)identifier;
+
+/**
+ 创建存储对象
+ 
+ @param identifier 区分多账号下用户的标识
+ @return 存储对象
+ */
+- (instancetype)initWithIdentifier:(NSString *)identifier;
 
 @end
 

@@ -14,13 +14,10 @@
 @interface AGTabBarViewController ()
 <AGBadgeManagerDelegate>
 
-/** 主页面 */
 @property (nonatomic, weak) AGHomeViewController *homeVC;
 
-/** 好友页面 */
 @property (nonatomic, weak) AGTicketViewController *ticketVC;
 
-/** kobe */
 @property (nonatomic, strong) AGAllTicketBM *allTicket;
 
 @end
@@ -41,11 +38,11 @@
         }
     }
     
-    // 注册标记观察者
+    // Add observer
     [self.allTicket ag_registerObserver:self];
     
-    [self.allTicket ag_updateBadge];
-    
+    // Update UI
+    [self.allTicket ag_resendBadgeChangeNotification];
 }
 
 #pragma mark - ---------- Custom Delegate ----------

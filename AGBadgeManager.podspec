@@ -9,7 +9,7 @@
 
 Pod::Spec.new do |s|
   s.name         = "AGBadgeManager" # 项目名称
-  s.version      = "0.1.0"        # 版本号 与 你仓库的 标签号 对应
+  s.version      = "0.1.1"        # 版本号 与 你仓库的 标签号 对应
   s.license      = "MIT"          # 开源证书
   s.summary      = "多页面红点标记管理器。" # 项目简介
 

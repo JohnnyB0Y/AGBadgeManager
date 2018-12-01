@@ -33,7 +33,7 @@
 #pragma mark - ---------- Event Methods ----------
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
-    // clear all badge
+    // Clear all badge
     [self.kobe ag_clearAllBadge];
     [self.mose ag_clearAllBadge];
     [self.byne ag_clearAllBadge];

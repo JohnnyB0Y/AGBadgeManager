@@ -7,7 +7,7 @@
 //  提示标记管理者
 
 #import "AGBadgeManager.h"
-
+#import "AGBadgePersistent.h"
 
 @interface __AGBadgeManager : NSObject
 
@@ -20,7 +20,10 @@
 - (NSInteger) badgeForType:(NSString *)type;
 
 /** 对某类型标记加一 return currentBadge */
-- (NSInteger) addForType:(NSString *)type;
+- (NSInteger) plusForType:(NSString *)type;
+/** 对某类型标记增加 badge, return currentBadge */
+- (NSInteger) plusBadge:(NSInteger)badge forType:(NSString *)type;
+
 /** 对某类型标记减一 return currentBadge */
 - (NSInteger) minusForType:(NSString *)type;
 /** 对某类型标记减去 badge, return currentBadge */
@@ -28,13 +31,14 @@
 /** 对某类型标记清零 return 清除数量 */
 - (NSInteger) clearForType:(NSString *)type;
 
-- (void) setBadge:(NSInteger)badge forType:(NSString *)type;
+/** 重置标记数 */
+- (void) resetBadge:(NSInteger)badge forType:(NSString *)type;
 
-/** 更新badge, 通知代理 */
-- (void) updateForType:(NSString *)type;
+/** 让Observer 再接收一次 badgeManagerDidChange:current:mode:forType: 通知。 */
+- (void) resendBadgeChangeNotificationForType:(NSString *)type;
 
 /** 持久化 badge，用户退出 app 的时候需要 */
-- (void) persistentAllBadge;
+- (void) persistentAll;
 
 
 /** 添加对应类型的观察者 */
@@ -69,24 +73,24 @@
 {
     __block NSInteger badge = 0;
     dispatch_sync(_serialQueue, ^{
-        badge = [self.persistent ag_badgeIntegerForType:type];
+        badge = [self.persistent badgeForType:type];
     });
     return badge;
 }
 
 /** 对某类型标记加一 */
-- (NSInteger) addForType:(NSString *)type
+- (NSInteger) plusForType:(NSString *)type
 {
-    return [self addBadge:1 forType:type];
+    return [self plusBadge:1 forType:type];
 }
 
-- (NSInteger) addBadge:(NSInteger)badge forType:(NSString *)type
+- (NSInteger) plusBadge:(NSInteger)badge forType:(NSString *)type
 {
     __block NSInteger currentBadge = 0;
     dispatch_sync(_serialQueue, ^{
-        currentBadge = [self.persistent ag_badgeIntegerForType:type];
+        currentBadge = [self.persistent badgeForType:type];
         if ( badge > 0 ) {
-            currentBadge = [self.persistent ag_setBadgeInteger:currentBadge + badge  forType:type];
+            currentBadge = [self.persistent setBadge:currentBadge + badge  forType:type];
             // ...
             [self _didChangeBadge:badge currentBadge:currentBadge mode:AGBadgeManagerChangeModeAdd forType:type];
         }
@@ -106,9 +110,9 @@
 {
     __block NSInteger less = 0;
     dispatch_sync(_serialQueue, ^{
-        less = ([self.persistent ag_badgeIntegerForType:type] - badge);
+        less = ([self.persistent badgeForType:type] - badge);
         NSInteger currentBadge = less > 0 ? less : 0;
-        [self.persistent ag_setBadgeInteger:currentBadge forType:type];
+        [self.persistent setBadge:currentBadge forType:type];
         // ...
         if ( less >= 0 && badge > 0 ) {
             [self _didChangeBadge:badge currentBadge:currentBadge mode:AGBadgeManagerChangeModeMinus forType:type];
@@ -123,9 +127,9 @@
 {
     __block NSInteger badge = 0;
     dispatch_sync(_serialQueue, ^{
-        badge = [self.persistent ag_badgeIntegerForType:type];
+        badge = [self.persistent badgeForType:type];
         if ( badge > 0 ) {
-            [self.persistent ag_setBadgeInteger:0 forType:type];
+            [self.persistent setBadge:0 forType:type];
             [self _didChangeBadge:badge currentBadge:0 mode:AGBadgeManagerChangeModeMinus forType:type];
         }
     });
@@ -133,15 +137,15 @@
     return badge;
 }
 
-- (void)updateForType:(NSString *)type
+- (void)resendBadgeChangeNotificationForType:(NSString *)type
 {
     dispatch_sync(_serialQueue, ^{
-        NSInteger currentBadge = [self.persistent ag_badgeIntegerForType:type];
+        NSInteger currentBadge = [self.persistent badgeForType:type];
         [self _didChangeBadge:0 currentBadge:currentBadge mode:AGBadgeManagerChangeModeNormal forType:type];
     });
 }
 
-- (void)setBadge:(NSInteger)badge forType:(NSString *)type
+- (void)resetBadge:(NSInteger)badge forType:(NSString *)type
 {
     dispatch_sync(_serialQueue, ^{
         [self _didChangeBadge:badge currentBadge:badge mode:AGBadgeManagerChangeModeNormal forType:type];
@@ -149,10 +153,10 @@
 }
 
 /** 持久化 badge，用户退出 app 的时候需要 */
-- (void) persistentAllBadge
+- (void) persistentAll
 {
     dispatch_sync(_serialQueue, ^{
-        [self.persistent ag_persistentAllBadge];
+        [self.persistent persistentAll];
     });
 }
 
@@ -167,7 +171,6 @@
 - (void) removeObserver:(id<AGBadgeManagerDelegate>)observer forType:(NSString *)type
 {
     if ( observer == nil || type == nil ) return;
-    
     NSMapTable *mapTable = [self _observerMapTableWithType:type];
     [mapTable removeObjectForKey:[observer description]];
 }
@@ -178,10 +181,8 @@
                     mode:(AGBadgeManagerChangeMode)mode
                  forType:(NSString *)type
 {
-    NSString *currentBadgeStr = [NSNumber numberWithInteger:currentBadge].stringValue;
-    
     dispatch_async(dispatch_get_main_queue(), ^{
-        
+        NSString *currentBadgeStr = [NSNumber numberWithInteger:currentBadge].stringValue;
         NSMapTable *mapTable = self.observerInfo[type];
         NSEnumerator *enumerator = [mapTable objectEnumerator];
         id<AGBadgeManagerDelegate> observer;
@@ -227,7 +228,7 @@
 #pragma mark - ---------- Override Methods ----------
 - (NSString *) debugDescription
 {
-    return [NSString stringWithFormat:@"%@-%@", self,self.persistent];
+    return [NSString stringWithFormat:@"%@-%@", self, self.persistent];
 }
 
 @end
@@ -243,35 +244,17 @@
 
 @implementation AGBadgeManager
 
-
-- (NSInteger)ag_badge
-{
-    return [self.badgeManager badgeForType:self.ag_badgeType];
-}
-
-/** 获取标记数值对象 */
-- (NSNumber *) ag_badgeNumber
-{
-    return [NSNumber numberWithInteger:[self ag_badge]];
-}
-
-/** 获取标记数值字符串 */
-- (NSString *) ag_badgeString
-{
-    return [self ag_badgeNumber].stringValue;
-}
-
 - (void)ag_registerObserver:(id<AGBadgeManagerDelegate>)observer
 {
-    [self.badgeManager registerObserver:observer forType:[self ag_badgeType]];
+    [self.badgeManager registerObserver:observer forType:[self ag_typeOfBadge]];
 }
 
 - (void)ag_removeObserver:(id<AGBadgeManagerDelegate>)observer
 {
-    [self.badgeManager removeObserver:observer forType:[self ag_badgeType]];
+    [self.badgeManager removeObserver:observer forType:[self ag_typeOfBadge]];
 }
 
-- (NSString *)ag_badgeType
+- (NSString *)ag_typeOfBadge
 {
     return NSStringFromClass(self.class);
 }
@@ -279,70 +262,69 @@
 /** 是否本类型？ */
 - (BOOL) ag_isEqualToType:(NSString *)type
 {
-    return [type isEqualToString:self.ag_badgeType];
+    return [type isEqualToString:[self ag_typeOfBadge]];
 }
 
-- (void) ag_updateBadge
+- (void) ag_resendBadgeChangeNotification
 {
-    [self.badgeManager updateForType:self.ag_badgeType];
+    [self.badgeManager resendBadgeChangeNotificationForType:[self ag_typeOfBadge]];
 }
 
-/**
- 标记加一
- 
- @return 当前标记数量
- */
-- (NSInteger) ag_add
+- (NSInteger) ag_plus
 {
-    return [self.badgeManager addForType:self.ag_badgeType];
+    return [self.badgeManager plusForType:[self ag_typeOfBadge]];
 }
 
-/**
- 标记减一
- 
- @return 当前标记数量
- */
 - (NSInteger) ag_minus
 {
-    return [self.badgeManager minusForType:self.ag_badgeType];
+    return [self.badgeManager minusForType:[self ag_typeOfBadge]];
 }
 
-/**
- 减去标记数
- 
- @param badge 待减去的标记数
- @return 当前标记数量
- */
 - (NSInteger) ag_minusBadge:(NSInteger)badge
 {
-    return [self.badgeManager minusBadge:badge forType:self.ag_badgeType];
+    return [self.badgeManager minusBadge:badge forType:[self ag_typeOfBadge]];
 }
 
 /** 对某类型标记清零 */
 - (void) ag_clearAllBadge
 {
-    [self.badgeManager clearForType:self.ag_badgeType];
+    [self.badgeManager clearForType:[self ag_typeOfBadge]];
 }
 
-- (void)ag_setBadge:(NSInteger)badge
+- (void)ag_resetBadge:(NSInteger)badge
 {
-    [self.badgeManager setBadge:badge forType:self.ag_badgeType];
+    [self.badgeManager resetBadge:badge forType:[self ag_typeOfBadge]];
 }
 
-+ (void) ag_configurationWithPersistent:(id<AGBadgePersistentDelegate>)persistent
++ (void) ag_configurationPersistent:(id<AGBadgePersistentDelegate>)persistent
 {
     __AGBadgeManager *badgeManager = [__AGBadgeManager sharedInstance];
     badgeManager.persistent = persistent;
 }
 
 /** 持久化 badge，用户退出 app 的时候需要 */
-+ (void) ag_persistentAllBadge
++ (void) ag_persistentAll
 {
     __AGBadgeManager *badgeManager = [__AGBadgeManager sharedInstance];
-    [badgeManager persistentAllBadge];
+    [badgeManager persistentAll];
 }
 
 #pragma mark - ----------- Getter Methods ----------
+- (NSInteger)badge
+{
+    return [self.badgeManager badgeForType:[self ag_typeOfBadge]];
+}
+
+- (NSNumber *)numberBadge
+{
+    return [NSNumber numberWithInteger:self.badge];
+}
+
+- (NSString *)stringBadge
+{
+    return self.numberBadge.stringValue;
+}
+
 - (__AGBadgeManager *)badgeManager
 {
     if (_badgeManager == nil) {

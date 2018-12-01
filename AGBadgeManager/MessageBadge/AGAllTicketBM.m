@@ -44,8 +44,8 @@
                          mode:(AGBadgeManagerChangeMode)mode
                       forType:(NSString *)type
 {
-    NSInteger badge = self.kobe.ag_badge + self.byne.ag_badge + self.mose.ag_badge;
-    [self ag_setBadge:badge];
+    NSInteger badge = self.kobe.badge + self.byne.badge + self.mose.badge;
+    [self ag_resetBadge:badge];
 }
 
 #pragma mark - ----------- Getter Methods ----------

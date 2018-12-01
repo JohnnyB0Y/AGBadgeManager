@@ -8,12 +8,10 @@
 
 #import "AGBadgePersistent.h"
 
-// 在 userinfo 取出标记数据
 NSString * const kAGBadgePersistentDict = @"kAGBadgePersistentDict";
 
 @interface AGBadgePersistent ()
 
-/** badgeDict */
 @property (nonatomic, strong) NSMutableDictionary *badgeDictM;
 
 @end
@@ -22,7 +20,7 @@ NSString * const kAGBadgePersistentDict = @"kAGBadgePersistentDict";
     NSString *_identifier;
 }
 
-- (instancetype)initWithPersistentIdentifier:(NSString *)identifier
+- (instancetype)initWithIdentifier:(NSString *)identifier
 {
     self = [self init];
     
@@ -33,36 +31,23 @@ NSString * const kAGBadgePersistentDict = @"kAGBadgePersistentDict";
     return self;
 }
 
-+ (instancetype)newWithPersistentIdentifier:(NSString *)identifier
++ (instancetype)newWithIdentifier:(NSString *)identifier
 {
-    return [[self alloc] initWithPersistentIdentifier:identifier];
+    return [[self alloc] initWithIdentifier:identifier];
 }
 
-- (NSNumber *) ag_badgeForType:(NSString *)type
+- (NSInteger) badgeForType:(NSString *)type
 {
-    return [self.badgeDictM objectForKey:type];
+    return [[self.badgeDictM objectForKey:type] integerValue];
 }
 
-- (NSInteger) ag_badgeIntegerForType:(NSString *)type
+- (NSInteger) setBadge:(NSInteger)badge forType:(NSString *)type
 {
-    return [[self ag_badgeForType:type] integerValue];
-}
-
-- (NSInteger) ag_setBadgeInteger:(NSInteger)badge forType:(NSString *)type
-{
-    badge = badge >= 0 ? badge : 0;
     [[self badgeDictM] setObject:[NSNumber numberWithInteger:badge] forKey:type];
     return badge;
 }
 
-- (NSNumber *)ag_setBadge:(NSNumber *)badge forType:(NSString *)type
-{
-    badge = badge.integerValue >= 0 ? badge : @0;
-    [[self badgeDictM] setObject:badge forKey:type];
-    return badge;
-}
-
-- (void)ag_persistentAllBadge
+- (void)persistentAll
 {
     NSMutableDictionary *baseBadgeDictM = [[NSUserDefaults standardUserDefaults] objectForKey:kAGBadgePersistentDict];
     baseBadgeDictM = baseBadgeDictM ? [baseBadgeDictM mutableCopy] : [NSMutableDictionary dictionaryWithCapacity:10];

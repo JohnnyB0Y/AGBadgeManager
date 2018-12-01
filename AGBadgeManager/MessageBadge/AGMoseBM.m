@@ -10,7 +10,7 @@
 
 @implementation AGMoseBM
 
-- (NSString *)ag_badgeType
+- (NSString *)ag_typeOfBadge
 {
     return @"kAGMoseBMType";
 }
