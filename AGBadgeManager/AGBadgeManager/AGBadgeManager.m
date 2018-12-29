@@ -92,7 +92,7 @@
         if ( badge > 0 ) {
             currentBadge = [self.persistent setBadge:currentBadge + badge  forType:type];
             // ...
-            [self _didChangeBadge:badge currentBadge:currentBadge mode:AGBadgeManagerChangeModeAdd forType:type];
+            [self _didChangeBadge:badge currentBadge:currentBadge mode:AGBadgeManagerChangeModePlus forType:type];
         }
     });
     
@@ -141,14 +141,14 @@
 {
     dispatch_sync(_serialQueue, ^{
         NSInteger currentBadge = [self.persistent badgeForType:type];
-        [self _didChangeBadge:0 currentBadge:currentBadge mode:AGBadgeManagerChangeModeNormal forType:type];
+        [self _didChangeBadge:0 currentBadge:currentBadge mode:AGBadgeManagerChangeModeNone forType:type];
     });
 }
 
 - (void)resetBadge:(NSInteger)badge forType:(NSString *)type
 {
     dispatch_sync(_serialQueue, ^{
-        [self _didChangeBadge:badge currentBadge:badge mode:AGBadgeManagerChangeModeNormal forType:type];
+        [self _didChangeBadge:badge currentBadge:badge mode:AGBadgeManagerChangeModeNone forType:type];
     });
 }
 

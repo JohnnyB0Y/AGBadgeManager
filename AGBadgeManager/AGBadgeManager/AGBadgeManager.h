@@ -13,8 +13,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 typedef NS_ENUM(NSUInteger, AGBadgeManagerChangeMode) {
-    AGBadgeManagerChangeModeNormal = 0,
-    AGBadgeManagerChangeModeAdd,
+    AGBadgeManagerChangeModeNone = 0,
+    AGBadgeManagerChangeModePlus,
     AGBadgeManagerChangeModeMinus,
 };
 
